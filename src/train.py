@@ -178,7 +178,7 @@ def train(
 
         mlflow.sklearn.log_model(
             pipeline,
-            name="model",
+            artifact_path="model",
             skops_trusted_types=[
                 "numpy.dtype",
                 "sklearn.tree._tree.Tree",
