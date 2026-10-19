@@ -1,0 +1,58 @@
+project:
+  name: "employee-attrition-mlops"
+  random_state: 42
+
+data:
+  raw_path: "data/raw/employee_attrition.csv"
+  processed_path: "data/processed/employee_attrition_processed.csv"
+  target_column: "Attrition"
+  test_size: 0.20
+  missing_value_fraction: 0.02
+
+model:
+  type: "random_forest"
+  n_estimators: 300
+  max_depth: null
+  min_samples_split: 2
+  min_samples_leaf: 1
+  class_weight: "balanced"
+
+training:
+  primary_metric: "f1"
+  minimum_f1: 0.45
+  experiment_name: "employee-attrition"
+  mlflow_tracking_uri: sqlite:///mlflow.db
+
+
+features:
+  drop_columns:
+    - "EmployeeNumber"
+    - "EmployeeCount"
+    - "Over18"
+    - "StandardHours"
+
+monitoring:
+  drift_threshold: 0.30
+  production_sample_fraction: 0.30
+  random_state: 42
+
+experiments:
+  - name: "rf_baseline"
+    n_estimators: 100
+    max_depth: 5
+
+  - name: "rf_more_trees"
+    n_estimators: 200
+    max_depth: 5
+
+  - name: "rf_deeper"
+    n_estimators: 200
+    max_depth: 10
+
+  - name: "rf_large"
+    n_estimators: 300
+    max_depth: 10
+
+  - name: "rf_unrestricted"
+    n_estimators: 300
+    max_depth: null

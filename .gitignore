@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data files
+data/raw/employee_attrition.csv
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/raw/*.dvc
+!data/processed/*.dvc
+
+
+# DVC
+.dvc/cache/
+
+# Model artifacts
+models/*
+!models/.gitkeep
+
+# Reports
+reports/*
+!reports/.gitkeep
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# Logs
+*.log
+
+# Environment/secrets
+.env
+.env.*
+*.pem
+*.key
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Nested repositories and local environments
+**/.git/
+**/.venv/
+**/venv/
+
+# Local MLflow tracking database
+mlflow.db
+
+# Accidental nested project copies
+/mlops-complete-pipeline/

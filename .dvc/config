@@ -1,0 +1,12 @@
+[core]
+    remote = gdrive
+    autostage = true
+[cache]
+    type = copy
+['remote "local"']
+    url = C:\Users\steve\OneDrive\Documents\dvc-storage
+['remote "gdrive"']
+    url = gdrive://1HJFPwr9rZijPJgzZnSp3P5xSyUzAcYmO
+['remote "origin"']
+    url = s3://dvc
+    endpointurl = https://dagshub.com/stevenjin94-stack/my-first-repo.s3
