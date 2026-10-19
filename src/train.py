@@ -179,10 +179,6 @@ def train(
         mlflow.sklearn.log_model(
             pipeline,
             artifact_path="model",
-            skops_trusted_types=[
-                "numpy.dtype",
-                "sklearn.tree._tree.Tree",
-            ],
         )
 
         print(f"Run ID: {run.info.run_id}")
