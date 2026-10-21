@@ -28,17 +28,16 @@ def main():
 
     runs = mlflow.search_runs(
         experiment_ids=[experiment.experiment_id],
-        order_by=["metrics.f1 DESC"],
+        order_by=["metrics.validation_f1 DESC"],
     )
-
     if runs.empty:
         raise RuntimeError("No MLflow runs were found.")
 
     # Exclude runs without valid F1 scores.
-    runs["metrics.f1"] = pd.to_numeric(
-        runs["metrics.f1"], errors="coerce"
+    runs["metrics.validation_f1"] = pd.to_numeric(
+        runs["metrics.validation_f1"], errors="coerce"
     )
-    runs = runs.dropna(subset=["metrics.f1"])
+    runs = runs.dropna(subset=["metrics.validation_f1"])
 
     if "status" in runs.columns:
         runs = runs[runs["status"] == "FINISHED"]
@@ -68,7 +67,7 @@ def main():
         # If a configuration has been run more than once,
         # retain its highest-F1 completed run.
         best_candidate = candidates.loc[
-            candidates["metrics.f1"].idxmax()
+            candidates["metrics.validation_f1"].idxmax()
         ].copy()
 
         best_candidate["configured_name"] = item["name"]
@@ -81,12 +80,12 @@ def main():
         )
 
     results = pd.DataFrame(selected).sort_values(
-        "metrics.f1", ascending=False
+        "metrics.validation_f1", ascending=False
     )
-
     columns = [
         "configured_name",
         "run_id",
+        "metrics.validation_f1",
         "metrics.f1",
         "metrics.accuracy",
         "metrics.precision",
@@ -94,7 +93,6 @@ def main():
         "params.n_estimators",
         "params.max_depth",
     ]
-
     print("\nConfigured Experiment Results")
     print("=" * 90)
     print(results[columns].to_string(index=False))
@@ -105,7 +103,10 @@ def main():
     print("=" * 90)
     print(f"Experiment: {best['configured_name']}")
     print(f"Run ID: {best['run_id']}")
-    print(f"F1: {best['metrics.f1']:.4f}")
+    print(
+        f"Validation F1: {best['metrics.validation_f1']:.4f}"
+    )
+    print(f"Test F1 (reported only): {best['metrics.f1']:.4f}")
 
     if pd.notna(best.get("metrics.accuracy")):
         print(f"Accuracy: {best['metrics.accuracy']:.4f}")

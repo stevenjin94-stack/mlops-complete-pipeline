@@ -74,6 +74,30 @@ def calculate_drift_share(report_dict: dict) -> float:
 
     return 0.0
 
+def get_drifted_features(report_dict: dict) -> list[str]:
+    """Return feature names Evidently flagged as drifted."""
+
+    drifted_features = []
+
+    for metric in report_dict.get("metrics", []):
+        config = metric.get("config", {})
+
+        if config.get("type") != "evidently:metric_v2:ValueDrift":
+            continue
+
+        column = config.get("column")
+        threshold = config.get("threshold")
+        value = metric.get("value")
+
+        if (
+            isinstance(column, str)
+            and isinstance(threshold, (int, float))
+            and isinstance(value, (int, float))
+            and value > threshold
+        ):
+            drifted_features.append(column)
+
+    return sorted(drifted_features)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -135,12 +159,20 @@ def main():
 
     result = snapshot.dict()
     drift_share = calculate_drift_share(result)
+    drifted_features = get_drifted_features(result)
 
     print("\nDrift Monitoring Summary")
     print("=" * 60)
     print(f"Overall drift share: {drift_share:.2%}")
-    print(f"HTML report: {output_path}")
 
+    if drifted_features:
+        print("Drifted features:")
+        for feature in drifted_features:
+            print(f"  - {feature}")
+    else:
+        print("Drifted features: None")
+
+    print(f"HTML report: {output_path}")
     threshold = config["monitoring"]["drift_threshold"]
 
     if drift_share > threshold:

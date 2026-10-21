@@ -9,35 +9,44 @@ from sklearn.metrics import (
     recall_score,
 )
 
+def select_classification_threshold(
+    model,
+    X_validation: pd.DataFrame,
+    y_validation: pd.Series,
+) -> float:
+    """Select the threshold that maximizes F1 on validation data."""
+
+    probabilities = model.predict_proba(X_validation)[:, 1]
+
+    best_threshold = 0.50
+    best_f1 = -1.0
+
+    for threshold in [i / 100 for i in range(20, 61)]:
+        predictions = (probabilities >= threshold).astype(int)
+
+        score = f1_score(
+            y_validation,
+            predictions,
+            zero_division=0,
+        )
+
+        if score > best_f1:
+            best_f1 = score
+            best_threshold = threshold
+
+    return best_threshold
+
 
 def evaluate_classification(
     model,
     X_test: pd.DataFrame,
     y_test: pd.Series,
+    threshold: float = 0.50,
 ) -> dict[str, float]:
-    """Evaluate a classification model and find the best F1 threshold."""
+    """Evaluate test data using a previously selected threshold."""
 
     probabilities = model.predict_proba(X_test)[:, 1]
-
-    best_threshold = 0.50
-    best_f1 = 0.0
-    best_predictions = None
-
-    for threshold in [i / 100 for i in range(20, 61)]:
-        predictions = (probabilities >= threshold).astype(int)
-
-        f1 = f1_score(
-            y_test,
-            predictions,
-            zero_division=0,
-        )
-
-        if f1 > best_f1:
-            best_f1 = f1
-            best_threshold = threshold
-            best_predictions = predictions
-
-    predictions = best_predictions
+    predictions = (probabilities >= threshold).astype(int)
 
     return {
         "accuracy": accuracy_score(y_test, predictions),
@@ -56,5 +65,5 @@ def evaluate_classification(
             predictions,
             zero_division=0,
         ),
-        "threshold": best_threshold,
+        "threshold": threshold,
     }

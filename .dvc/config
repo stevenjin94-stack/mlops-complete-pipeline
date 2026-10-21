@@ -1,5 +1,5 @@
 [core]
-    remote = gdrive
+    remote = origin
     autostage = true
 [cache]
     type = copy

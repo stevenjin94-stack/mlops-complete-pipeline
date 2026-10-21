@@ -18,7 +18,10 @@ from src.data_preprocessing import (
     build_preprocessor,
     split_features_target,
 )
-from src.evaluate import evaluate_classification
+from src.evaluate import (
+    evaluate_classification,
+    select_classification_threshold,
+)
 
 
 def load_config(path: str) -> dict:
@@ -92,12 +95,24 @@ def train(
     if y.isna().any():
         raise ValueError("Unexpected target values detected.")
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=config["data"]["test_size"],
-        random_state=config["project"]["random_state"],
-        stratify=y,
+    X_train_validation, X_test, y_train_validation, y_test = (
+        train_test_split(
+            X,
+            y,
+            test_size=config["data"]["test_size"],
+            random_state=config["project"]["random_state"],
+            stratify=y,
+        )
+    )
+
+    X_train, X_validation, y_train, y_validation = (
+        train_test_split(
+            X_train_validation,
+            y_train_validation,
+            test_size=0.20,
+            random_state=config["project"]["random_state"],
+            stratify=y_train_validation,
+        )
     )
 
     preprocessor = build_preprocessor(X_train)
@@ -156,12 +171,30 @@ def train(
 
         pipeline.fit(X_train, y_train)
 
+        threshold = select_classification_threshold(
+            pipeline,
+            X_validation,
+            y_validation,
+        )
+
+        validation_metrics = evaluate_classification(
+            pipeline,
+            X_validation,
+            y_validation,
+            threshold=threshold,
+        )
+
         metrics = evaluate_classification(
             pipeline,
             X_test,
             y_test,
+            threshold=threshold,
         )
 
+        mlflow.log_metric(
+            "validation_f1",
+            validation_metrics["f1"],
+        )
         mlflow.log_metrics(
             {
                 "accuracy": metrics["accuracy"],
@@ -179,8 +212,11 @@ def train(
         mlflow.sklearn.log_model(
             pipeline,
             artifact_path="model",
+            skops_trusted_types=[
+                "numpy.dtype",
+                "sklearn.tree._tree.Tree",
+            ],
         )
-
         print(f"Run ID: {run.info.run_id}")
         print("Metrics:")
 
@@ -189,12 +225,11 @@ def train(
 
         minimum_f1 = config["training"]["minimum_f1"]
 
-        if metrics["f1"] < minimum_f1:
+        if validation_metrics["f1"] < minimum_f1:
             raise RuntimeError(
-                f"Model F1={metrics['f1']:.4f} is below "
-                f"minimum threshold {minimum_f1:.4f}"
+                f"Validation F1={validation_metrics['f1']:.4f} "
+                f"is below minimum threshold {minimum_f1:.4f}"
             )
-
 
 
     return {
