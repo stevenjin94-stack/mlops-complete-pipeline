@@ -31,6 +31,9 @@ jobs:
           pip install -r requirements.txt
 
       - name: Pull versioned dataset
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.DAGSHUB_USER }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           dvc pull data/raw/employee_attrition.csv.dvc
 
@@ -67,6 +70,9 @@ jobs:
           pip install -r requirements.txt
 
       - name: Pull versioned dataset
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.DAGSHUB_USER }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           dvc pull data/raw/employee_attrition.csv.dvc
 
