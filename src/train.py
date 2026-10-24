@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import argparse
 import hashlib
 from pathlib import Path
@@ -125,9 +126,12 @@ def train(
         ]
     )
 
-    mlflow.set_tracking_uri(
-        config["training"]["mlflow_tracking_uri"]
+    mlflow_tracking_uri = os.getenv(
+        "MLFLOW_TRACKING_URI",
+        config["training"]["mlflow_tracking_uri"],
     )
+
+    mlflow.set_tracking_uri(mlflow_tracking_uri)
 
     mlflow.set_experiment(
         config["training"]["experiment_name"]
@@ -212,17 +216,13 @@ def train(
         mlflow.sklearn.log_model(
             pipeline,
             artifact_path="model",
-            skops_trusted_types=[
-                "numpy.dtype",
-                "sklearn.tree._tree.Tree",
-            ],
         )
+
         print(f"Run ID: {run.info.run_id}")
         print("Metrics:")
 
         for name, value in metrics.items():
             print(f"  {name}: {value:.4f}")
-
         minimum_f1 = config["training"]["minimum_f1"]
 
         if validation_metrics["f1"] < minimum_f1:

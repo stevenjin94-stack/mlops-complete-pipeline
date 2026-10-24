@@ -8,7 +8,10 @@ from src.data_preprocessing import (
     build_preprocessor,
     split_features_target,
 )
-from src.evaluate import evaluate_classification
+from src.evaluate import (
+    evaluate_classification,
+    select_classification_threshold,
+)
 
 
 DATA_PATH = "data/raw/employee_attrition.csv"
@@ -21,24 +24,22 @@ DROP_COLUMNS = [
 ]
 
 
+
 def build_test_model():
     df = pd.read_csv(DATA_PATH)
 
-    # Use a small sample for fast tests.
-    df = df.sample(
-        n=600,
-        random_state=42,
-    )
+    # Use a reproducible sample to keep tests fast.
+    df = df.sample(n=600, random_state=42)
 
     X, y = split_features_target(
         df,
         "Attrition",
         DROP_COLUMNS,
     )
-
     y = y.map({"No": 0, "Yes": 1})
 
-    X_train, X_test, y_train, y_test = (
+    # First reserve an independent test set.
+    X_train_validation, X_test, y_train_validation, y_test = (
         train_test_split(
             X,
             y,
@@ -48,16 +49,22 @@ def build_test_model():
         )
     )
 
-    preprocessor = build_preprocessor(
-        X_train
+    # Split the remaining data into training and validation sets.
+    X_train, X_validation, y_train, y_validation = (
+        train_test_split(
+            X_train_validation,
+            y_train_validation,
+            test_size=0.20,
+            random_state=42,
+            stratify=y_train_validation,
+        )
     )
+
+    preprocessor = build_preprocessor(X_train)
 
     model = Pipeline(
         steps=[
-            (
-                "preprocessor",
-                preprocessor,
-            ),
+            ("preprocessor", preprocessor),
             (
                 "classifier",
                 RandomForestClassifier(
@@ -71,37 +78,37 @@ def build_test_model():
         ]
     )
 
-    model.fit(
-        X_train,
-        y_train,
+    model.fit(X_train, y_train)
+
+    # Choose the threshold using validation data only.
+    threshold = select_classification_threshold(
+        model,
+        X_validation,
+        y_validation,
     )
 
-    return model, X_test, y_test
+    return model, X_test, y_test, threshold
+
 
 
 def test_predictions_have_correct_shape():
-    model, X_test, y_test = (
-        build_test_model()
-    )
+    model, X_test, y_test, threshold = build_test_model()
 
-    predictions = model.predict(X_test)
+    probabilities = model.predict_proba(X_test)[:, 1]
+    predictions = (probabilities >= threshold).astype(int)
 
     assert len(predictions) == len(y_test)
     assert predictions.ndim == 1
 
 
 def test_model_meets_minimum_performance():
-    model, X_test, y_test = (
-        build_test_model()
-    )
+    model, X_test, y_test, threshold = build_test_model()
 
     metrics = evaluate_classification(
         model,
         X_test,
         y_test,
+        threshold=threshold,
     )
 
-    # A deliberately modest threshold makes
-    # this a useful regression test without
-    # making CI excessively brittle.
     assert metrics["f1"] >= 0.35

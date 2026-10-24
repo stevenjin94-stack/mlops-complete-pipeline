@@ -65,3 +65,7 @@ mlflow.db
 
 # Accidental nested project copies
 /mlops-complete-pipeline/
+
+# Local MLflow test and backup databases
+mlflow-ci-test.db
+mlflow.db.backup
