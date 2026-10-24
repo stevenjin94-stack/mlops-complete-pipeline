@@ -30,9 +30,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Prepare dataset
+      - name: Pull versioned dataset
         run: |
-          python -m src.prepare_data
+          dvc pull data/raw/employee_attrition.csv.dvc
 
       - name: Diagnose dataset and package versions
         run: |
@@ -66,9 +66,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Prepare dataset
+      - name: Pull versioned dataset
         run: |
-          python -m src.prepare_data
+          dvc pull data/raw/employee_attrition.csv.dvc
 
       - name: Train model
         run: |
